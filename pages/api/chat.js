@@ -1,14 +1,20 @@
-import { getChatResponse } from "../../lib/openai";
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
   const { messages } = req.body;
-  if (!messages) return res.status(400).json({ error: "messages required" });
-  try {
-    const reply = await getChatResponse(messages);
-    res.status(200).json({ reply });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "OpenAI request failed" });
-  }
+
+  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages
+    })
+  });
+
+  const data = await openaiRes.json();
+  const reply = data.choices?.[0]?.message?.content || "Error en la respuesta";
+
+  res.status(200).json({ reply });
 }
